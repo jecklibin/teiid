@@ -143,9 +143,16 @@ public class ExpressionMappingVisitor extends LanguageVisitor {
 
         Expression replacmentSymbol = replaceExpression(expr);
 
-        if (!(replacmentSymbol instanceof Symbol)) {
+        if (replacmentSymbol == ses) {
+            return replacmentSymbol;
+        }
+
+        boolean shouldAlias = alias && createAliases() && !Symbol.getShortName(replacmentSymbol).equals(name);
+
+        if (!(replacmentSymbol instanceof Symbol)
+                && (!shouldAlias || !(ses instanceof ElementSymbol || ses instanceof AliasSymbol))) {
             replacmentSymbol = new ExpressionSymbol(name, replacmentSymbol);
-        } else if (alias && createAliases() && !Symbol.getShortName(replacmentSymbol).equals(name)) {
+        } else if (shouldAlias) {
             replacmentSymbol = new AliasSymbol(name, replacmentSymbol);
         }
         return replacmentSymbol;
@@ -486,6 +493,16 @@ public class ExpressionMappingVisitor extends LanguageVisitor {
     public void visit(ReturnStatement obj) {
         if (obj.getExpression() != null) {
             obj.setExpression(replaceExpression(obj.getExpression()));
+        }
+    }
+
+    @Override
+    public void visit(IsDistinctCriteria isDistinctCriteria) {
+        if (isDistinctCriteria.getLeftRowValue() instanceof Expression) {
+            isDistinctCriteria.setLeftRowValue(replaceExpression((Expression)isDistinctCriteria.getLeftRowValue()));
+        }
+        if (isDistinctCriteria.getRightRowValue() instanceof Expression) {
+            isDistinctCriteria.setRightRowValue(replaceExpression((Expression)isDistinctCriteria.getRightRowValue()));
         }
     }
 

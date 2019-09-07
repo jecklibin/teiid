@@ -422,7 +422,7 @@ public class TestEmbeddedServer {
         out.write("<vdb name=\"test\" version=\"1\"><model name=\"test\" type=\"VIRTUAL\"><metadata type=\"DDL-FILE\">/v1.ddl</metadata></model></vdb>".getBytes("UTF-8"));
         out.close();
 
-        es.deployVDBZip(f.toURI().toURL());
+        es.getAdmin().deployVDBZip(f.toURI().toURL());
         ResultSet rs = es.getDriver().connect("jdbc:teiid:test", null).createStatement().executeQuery("select * from helloworld");
         rs.next();
         assertEquals("HELLO WORLD", rs.getString(1));
@@ -459,7 +459,7 @@ public class TestEmbeddedServer {
                 + "CREATE VIEW x as select 1;"
                 + "ALTER VIEW x RENAME TO y;";
 
-        es.deployVDB(new ByteArrayInputStream(ddl1.getBytes("UTF-8")), true);
+        es.getAdmin().deploy("x-vdb.ddl", new ByteArrayInputStream(ddl1.getBytes("UTF-8")));
 
         ResultSet rs = es.getDriver().connect("jdbc:teiid:x", null).createStatement().executeQuery("select * from y");
         rs.next();
@@ -530,6 +530,40 @@ public class TestEmbeddedServer {
         es.deployVDB(new ByteArrayInputStream(ddl4.getBytes("UTF-8")), true);
 
         ResultSet rs = es.getDriver().connect("jdbc:teiid:test3", null).createStatement().executeQuery("select * from x");
+        rs.next();
+        assertEquals("1", rs.getString(1));
+    }
+
+    @Test public void testDDLVDBImportTransitiveFanout() throws Exception {
+        es.start(new EmbeddedConfiguration());
+
+        String base1 = "CREATE DATABASE x VERSION '1';"
+                + "USE DATABASE x VERSION '1';"
+                + "CREATE VIRTUAL SCHEMA test1;"
+                + "SET SCHEMA test1;"
+                + "CREATE VIEW x as select 1;";
+
+        String base2 = "CREATE DATABASE y VERSION '1';"
+                + "USE DATABASE y VERSION '1';"
+                + "CREATE VIRTUAL SCHEMA test2;"
+                + "SET SCHEMA test2;"
+                + "CREATE VIEW y as select 1;";
+
+        String intermediate = "CREATE DATABASE test VERSION '1';"
+                + "USE DATABASE test VERSION '1';"
+                + "IMPORT DATABASE x VERSION '1';"
+                + "IMPORT DATABASE y VERSION '1';";
+
+        String top = "CREATE DATABASE test2 VERSION '1';"
+                + "USE DATABASE test2 VERSION '1';"
+                + "IMPORT DATABASE test VERSION '1';";
+
+        es.deployVDB(new ByteArrayInputStream(base1.getBytes("UTF-8")), true);
+        es.deployVDB(new ByteArrayInputStream(base2.getBytes("UTF-8")), true);
+        es.deployVDB(new ByteArrayInputStream(intermediate.getBytes("UTF-8")), true);
+        es.deployVDB(new ByteArrayInputStream(top.getBytes("UTF-8")), true);
+
+        ResultSet rs = es.getDriver().connect("jdbc:teiid:test2", null).createStatement().executeQuery("select * from x");
         rs.next();
         assertEquals("1", rs.getString(1));
     }

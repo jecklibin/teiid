@@ -19,6 +19,7 @@
 package org.teiid.adminapi;
 
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
@@ -500,7 +501,7 @@ public interface Admin {
      * @param vdbName
      * @param vdbVersion
      * @param modelName
-     * @param allowedTypes EnumSet<SchemaObjectType> Type of schema objects to retrieve, null means ALL the schema object types
+     * @param allowedTypes {@link EnumSet} Type of schema objects to retrieve, null means ALL the schema object types
      * @param typeNamePattern RegEx pattern to filter to names of tables, procedures that are being read. Null means no filter.
      */
     @Deprecated
@@ -512,7 +513,7 @@ public interface Admin {
      * @param vdbName
      * @param vdbVersion
      * @param modelName
-     * @param allowedTypes EnumSet<SchemaObjectType> Type of schema objects to retrieve, null means ALL the schema object types
+     * @param allowedTypes {@link EnumSet} Type of schema objects to retrieve, null means ALL the schema object types
      * @param typeNamePattern RegEx pattern to filter to names of tables, procedures that are being read. Null means no filter.
      */
     String getSchema(String vdbName, String vdbVersion, String modelName, EnumSet<SchemaObjectType> allowedTypes, String typeNamePattern) throws AdminException;
@@ -549,4 +550,11 @@ public interface Admin {
      * @throws AdminException
      */
     Collection<? extends VDB> getVDBs(boolean singleInstance) throws AdminException;
+
+    /**
+     * Deploy a .vdb or .zip vdb.  The deployment name will be taken from the url file name.
+     *
+     * @throws AdminException
+     */
+    void deployVDBZip(URL url) throws AdminException;
 }
